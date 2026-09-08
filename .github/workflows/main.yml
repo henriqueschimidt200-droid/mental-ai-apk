@@ -20,25 +20,41 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22'
+
+      - name: Encontrar projeto
+        run: |
+          PROJECT_DIR=$(dirname "$(find . -name package.json -not -path './node_modules/*' | head -1)")
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Projeto encontrado em: $PROJECT_DIR"
 
       - name: Instalar dependências
         run: npm install
+        working-directory: ${{ env.PROJECT_DIR }}
 
       - name: Criar projeto Android
         run: npx cap add android
+        working-directory: ${{ env.PROJECT_DIR }}
 
       - name: Sincronizar Capacitor
         run: npx cap sync android
+        working-directory: ${{ env.PROJECT_DIR }}
 
       - name: Dar permissão ao Gradle
         run: chmod +x android/gradlew
+        working-directory: ${{ env.PROJECT_DIR }}
 
       - name: Gerar APK
         run: cd android && ./gradlew assembleDebug
+        working-directory: ${{ env.PROJECT_DIR }}
+
+      - name: Copiar APK
+        run: |
+          mkdir -p apk
+          cp "$PROJECT_DIR/android/app/build/outputs/apk/debug/app-debug.apk" apk/Mental-AI.apk
 
       - name: Disponibilizar APK
         uses: actions/upload-artifact@v4
         with:
           name: Mental-AI-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: apk/Mental-AI.apk
